@@ -36,5 +36,5 @@ credentials
 .idea/
 .vscode/
 
-# Matt Pocock course (behind pay-wall)
-.claude/skills/course-*
+# Matt Pocock course skills + local Claude config (behind pay-wall / local-only)
+.claude/
