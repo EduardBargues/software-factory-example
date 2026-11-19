@@ -1,0 +1,5 @@
+interface:
+  display_name: "Update Notes"
+  short_description: "Extract lesson knowledge into a course-<workshop> help skill"
+policy:
+  allow_implicit_invocation: false
