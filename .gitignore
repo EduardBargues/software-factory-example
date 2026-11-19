@@ -35,3 +35,6 @@ credentials
 *.swp
 .idea/
 .vscode/
+
+# Matt Pocock course (behind pay-wall)
+.claude/skills/course-*

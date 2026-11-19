@@ -4,13 +4,14 @@ A reference **software factory**: an AI-agent pipeline that turns GitHub issues 
 
 The factory's first workload is a **mock of a real work application**: an AWS serverless service that receives **signed [incident.io](https://incident.io) webhooks** and grants **temporary elevated access** to the on-call engineer who acknowledges an escalation. All data is synthetic; no real incident.io tenant is connected.
 
-> Status: **design captured, pre-implementation.** The `docs/` spec, glossary, and ADRs are settled; code is next.
+> Status: **design captured, pre-implementation.** The `docs/` specs, glossary, and ADRs are settled; code is next. The design is split into **two specs** — one for the factory (built by hand), one for the app (built by the factory) — but **one repo** (see ADR-0001).
 
 ## What's here
 
 | Path | What it is |
 |---|---|
-| [`docs/SPEC.md`](docs/SPEC.md) | The full spec — problem, solution, user stories, implementation & testing decisions |
+| [`docs/factory/SPEC.md`](docs/factory/SPEC.md) | Spec for **the factory itself** — the agent pipeline (bootstrap; built by hand) |
+| [`docs/app/SPEC.md`](docs/app/SPEC.md) | Spec for **the app** — the incident.io webhook → permission-grant workload (built *by* the factory) |
 | [`GLOSSARY.md`](GLOSSARY.md) | Canonical domain + factory vocabulary (use these terms exactly) |
 | [`docs/adr/`](docs/adr/) | Architecture Decision Records |
 
