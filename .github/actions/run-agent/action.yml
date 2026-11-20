@@ -1,0 +1,61 @@
+# The factory's single swappable agent definition (factory SPEC D6, story 44).
+# Every task invokes the harness through here, so changing the model, CLI, or
+# auth is a one-file change. v1 harness: Claude Code via the official action,
+# authenticated with a Claude subscription OAuth token.
+name: run-agent
+description: Run the factory's agent harness with a prompt and return its final text.
+
+inputs:
+  prompt:
+    description: The task prompt for the agent (trusted; never interpolate untrusted issue text here).
+    required: true
+  # Supply this from a repository SECRET — the workflow does:
+  #   oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+  # Composite-action inputs can't be declared `secret:` (only reusable workflows can),
+  # but GitHub masks the registered secret value in logs wherever it appears, and this
+  # action never echoes it — so it is handled as a secret in practice.
+  oauth-token:
+    description: Claude Code subscription OAuth token. MUST come from a repo secret; GitHub masks it in logs.
+    required: true
+  model:
+    description: Model id to pin. Explore defaults to Sonnet (frequent, read-only); implement/review may override to Opus.
+    required: false
+    default: claude-sonnet-4-6
+  allowed-tools:
+    description: Comma-separated tools the agent may use.
+    required: false
+    default: Read,Grep,Glob
+  disallowed-tools:
+    description: Comma-separated tools the agent must never use.
+    required: false
+    default: Bash,Edit,Write,WebFetch,WebSearch,NotebookEdit
+  permission-mode:
+    description: Claude Code permission mode. `plan` enforces read-only.
+    required: false
+    default: plan
+  max-turns:
+    description: Maximum agent turns.
+    required: false
+    default: "12"
+
+outputs:
+  response:
+    description: The agent's final text response.
+    value: ${{ steps.agent.outputs.response }}
+
+runs:
+  using: composite
+  steps:
+    - id: agent
+      uses: anthropics/claude-code-action@v1
+      with:
+        # inputs.oauth-token, NOT secrets.* — composite actions have no secrets context.
+        # The workflow reads the secret and passes it in as this input (still masked in logs).
+        claude_code_oauth_token: ${{ inputs.oauth-token }}
+        prompt: ${{ inputs.prompt }}
+        claude_args: >-
+          --model ${{ inputs.model }}
+          --permission-mode ${{ inputs.permission-mode }}
+          --allowedTools "${{ inputs.allowed-tools }}"
+          --disallowedTools "${{ inputs.disallowed-tools }}"
+          --max-turns ${{ inputs.max-turns }}
