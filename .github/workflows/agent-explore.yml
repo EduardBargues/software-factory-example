@@ -8,12 +8,11 @@ on:
     types: [labeled]
 
 # Least privilege: read the code, write the verdict comment. No FACTORY_PAT —
-# explore triggers nothing downstream, so it never needs it. id-token is for the
-# harness action's OIDC token exchange.
+# explore triggers nothing downstream, so it never needs it. No id-token either:
+# the CLI harness authenticates with the API key, so there's no OIDC exchange.
 permissions:
   contents: read
   issues: write
-  id-token: write
 
 concurrency:
   group: agent-explore-${{ github.event.issue.number }}
@@ -66,7 +65,7 @@ jobs:
         id: explore
         uses: ./.github/actions/run-agent
         with:
-          oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          api-key: ${{ secrets.ANTHROPIC_API_KEY }}
           model: claude-sonnet-4-6
           prompt: |
             You are the EXPLORE task of a software factory. You run READ-ONLY and never write code.
