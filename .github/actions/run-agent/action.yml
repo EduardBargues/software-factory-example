@@ -1,10 +1,10 @@
 # The factory's single swappable agent definition (factory SPEC D6, story 44).
 # Every task invokes the harness through here, so changing the model, CLI, or
 # auth is a one-file change. v1 harness: the Claude Code CLI run headless
-# (`claude -p`), authenticated with a personal Anthropic API key. Using the CLI
-# directly (not anthropics/claude-code-action) means no GitHub App is required —
-# we only need the agent to run read-only and return text; the workflow posts
-# the comment itself.
+# (`claude -p`), authenticated via GitHub OIDC -> Anthropic Workload Identity
+# Federation. No long-lived credential is stored anywhere: GitHub mints a
+# short-lived OIDC token per run, and the CLI exchanges it for a short-lived
+# Claude token scoped to this repo. The workflow must grant `id-token: write`.
 name: run-agent
 description: Run the factory's agent harness (claude -p) with a prompt and return its final text.
 
@@ -12,16 +12,23 @@ inputs:
   prompt:
     description: The task prompt for the agent (trusted; never interpolate untrusted issue text here).
     required: true
-  # Supply this from a repository SECRET — the workflow does:
-  #   api-key: ${{ secrets.ANTHROPIC_API_KEY }}
-  # Composite-action inputs can't be declared `secret:` (only reusable workflows can),
-  # but GitHub masks the registered secret value in logs wherever it appears, and this
-  # action never echoes it — so it is handled as a secret in practice.
-  api-key:
-    description: Personal Anthropic API key. MUST come from a repo secret; GitHub masks it in logs.
+  # Federation identifiers (NOT credentials): useless without a valid GitHub OIDC
+  # token from this repo. Passed from repo secrets only to keep the Anthropic org
+  # out of the public repo, not because possessing them grants access.
+  federation-rule-id:
+    description: Anthropic WIF federation rule id (fdrl_...).
+    required: true
+  organization-id:
+    description: Anthropic organization id (UUID).
+    required: true
+  service-account-id:
+    description: Anthropic service account id (svac_...) the minted token acts as.
+    required: true
+  workspace-id:
+    description: Anthropic workspace id (wrkspc_...) the token is scoped to.
     required: true
   model:
-    description: Model id to pin. Explore defaults to Sonnet (frequent, read-only); implement/review may override to Opus.
+    description: Model id to pin. Explore defaults to Sonnet (frequent, read-only).
     required: false
     default: claude-sonnet-4-6
   allowed-tools:
@@ -49,13 +56,31 @@ runs:
       shell: bash
       run: npm install -g @anthropic-ai/claude-code@2.1.191
 
+    - name: Mint a GitHub OIDC token for Anthropic
+      shell: bash
+      env:
+        OIDC_AUDIENCE: https://api.anthropic.com
+      run: |
+        set -euo pipefail
+        # Requires the job's `id-token: write` permission; the runner then provides
+        # the request token/url env vars used below.
+        tokfile="$(mktemp)"
+        curl -sS -H "Authorization: Bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+          "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${OIDC_AUDIENCE}" \
+          | jq -r '.value' > "$tokfile"
+        [ -s "$tokfile" ] || { echo "::error::failed to mint GitHub OIDC token"; exit 1; }
+        echo "ANTHROPIC_IDENTITY_TOKEN_FILE=$tokfile" >> "$GITHUB_ENV"
+
     - id: agent
       shell: bash
       env:
-        # Auth: the CLI reads ANTHROPIC_API_KEY from the environment. Supplied from
-        # a repo secret (masked in logs) and never echoed. Passing config via env
-        # too, so untrusted values could never be shell-interpolated.
-        ANTHROPIC_API_KEY: ${{ inputs.api-key }}
+        # With these set and no ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN, the CLI
+        # exchanges the OIDC token (ANTHROPIC_IDENTITY_TOKEN_FILE, exported above)
+        # for a short-lived Claude token and refreshes it as needed.
+        ANTHROPIC_FEDERATION_RULE_ID: ${{ inputs.federation-rule-id }}
+        ANTHROPIC_ORGANIZATION_ID: ${{ inputs.organization-id }}
+        ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ inputs.service-account-id }}
+        ANTHROPIC_WORKSPACE_ID: ${{ inputs.workspace-id }}
         AGENT_PROMPT: ${{ inputs.prompt }}
         AGENT_MODEL: ${{ inputs.model }}
         AGENT_ALLOWED: ${{ inputs.allowed-tools }}
@@ -63,7 +88,8 @@ runs:
         AGENT_PERM: ${{ inputs.permission-mode }}
       run: |
         set -euo pipefail
-        # Headless, read-only run; capture the final text for the caller to post.
+        # Precedence foot-gun: a static credential (even empty) shadows federation.
+        unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN || true
         response="$(claude -p "$AGENT_PROMPT" \
           --model "$AGENT_MODEL" \
           --permission-mode "$AGENT_PERM" \
