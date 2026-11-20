@@ -39,3 +39,6 @@ credentials
 # Matt Pocock course skills (behind pay-wall) + local Claude config
 .claude/skills/course-*
 .claude/settings.local.json
+
+# Factory runtime scratch (the staged ticket a task reads) — never committed
+.factory/
