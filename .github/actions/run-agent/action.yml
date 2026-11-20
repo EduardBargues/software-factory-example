@@ -9,8 +9,13 @@ inputs:
   prompt:
     description: The task prompt for the agent (trusted; never interpolate untrusted issue text here).
     required: true
+  # Supply this from a repository SECRET — the workflow does:
+  #   oauth-token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+  # Composite-action inputs can't be declared `secret:` (only reusable workflows can),
+  # but GitHub masks the registered secret value in logs wherever it appears, and this
+  # action never echoes it — so it is handled as a secret in practice.
   oauth-token:
-    description: Claude Code subscription OAuth token (the CLAUDE_CODE_OAUTH_TOKEN secret).
+    description: Claude Code subscription OAuth token. MUST come from a repo secret; GitHub masks it in logs.
     required: true
   model:
     description: Model id to pin. Explore defaults to Sonnet (frequent, read-only); implement/review may override to Opus.
@@ -44,6 +49,8 @@ runs:
     - id: agent
       uses: anthropics/claude-code-action@v1
       with:
+        # inputs.oauth-token, NOT secrets.* — composite actions have no secrets context.
+        # The workflow reads the secret and passes it in as this input (still masked in logs).
         claude_code_oauth_token: ${{ inputs.oauth-token }}
         prompt: ${{ inputs.prompt }}
         claude_args: >-
