@@ -21,6 +21,12 @@ inputs:
   organization-id:
     description: Anthropic organization id (UUID).
     required: true
+  service-account-id:
+    description: Anthropic service account id (svac_...) the minted token acts as.
+    required: true
+  workspace-id:
+    description: Anthropic workspace id (wrkspc_...) the token is scoped to.
+    required: true
   model:
     description: Model id to pin. Explore defaults to Sonnet (frequent, read-only).
     required: false
@@ -73,6 +79,8 @@ runs:
         # for a short-lived Claude token and refreshes it as needed.
         ANTHROPIC_FEDERATION_RULE_ID: ${{ inputs.federation-rule-id }}
         ANTHROPIC_ORGANIZATION_ID: ${{ inputs.organization-id }}
+        ANTHROPIC_SERVICE_ACCOUNT_ID: ${{ inputs.service-account-id }}
+        ANTHROPIC_WORKSPACE_ID: ${{ inputs.workspace-id }}
         AGENT_PROMPT: ${{ inputs.prompt }}
         AGENT_MODEL: ${{ inputs.model }}
         AGENT_ALLOWED: ${{ inputs.allowed-tools }}
