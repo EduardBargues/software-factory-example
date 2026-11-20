@@ -87,17 +87,32 @@ runs:
         AGENT_DISALLOWED: ${{ inputs.disallowed-tools }}
         AGENT_PERM: ${{ inputs.permission-mode }}
       run: |
-        set -euo pipefail
+        set -uo pipefail
         # Precedence foot-gun: a static credential (even empty) shadows federation.
         unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN || true
-        response="$(claude -p "$AGENT_PROMPT" \
+        # Capture stdout/stderr to files (not a swallowing $()) so a failure is
+        # visible in the logs instead of a black box. Drop `set -e` for the call
+        # and handle the exit code ourselves.
+        out="$(mktemp)"; err="$(mktemp)"
+        claude -p "$AGENT_PROMPT" \
           --model "$AGENT_MODEL" \
           --permission-mode "$AGENT_PERM" \
           --allowedTools "$AGENT_ALLOWED" \
           --disallowedTools "$AGENT_DISALLOWED" \
-          --output-format text)"
+          --output-format text >"$out" 2>"$err"
+        rc=$?
+        if [ "$rc" -ne 0 ]; then
+          # Surface what claude emitted, redacting any short-lived token.
+          redact='s/sk-ant-[A-Za-z0-9_-]*/<redacted>/g'
+          echo "::group::claude stderr"; sed -E "$redact" "$err" >&2; echo "::endgroup::"
+          echo "::group::claude stdout"; sed -E "$redact" "$out"; echo "::endgroup::"
+          echo "::error::claude -p exited $rc"
+        fi
+        # Always publish whatever text we got, so Post verdict can use it (or fall back).
         {
           echo "response<<__RUNAGENT_EOF__"
-          printf '%s\n' "$response"
+          cat "$out"
+          echo
           echo "__RUNAGENT_EOF__"
         } >> "$GITHUB_OUTPUT"
+        exit "$rc"
