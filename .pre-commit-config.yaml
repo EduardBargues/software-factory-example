@@ -30,6 +30,13 @@ repos:
       - id: bandit
         files: ^src/
 
+  # Lints GitHub Actions workflows — the factory's own machinery. Catches bad
+  # ${{ }} expressions, unknown keys, deprecated actions, and shellchecks run: blocks.
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
   # Local hooks run in the project's uv environment so they see real dependencies.
   - repo: local
     hooks:
