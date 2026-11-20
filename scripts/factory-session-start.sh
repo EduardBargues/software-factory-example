@@ -22,14 +22,12 @@ die() { printf 'error: %s\n' "$1" >&2; exit 1; }
 command -v op >/dev/null 2>&1 || die "1Password CLI 'op' not found — install it, then re-run."
 command -v gh >/dev/null 2>&1 || die "GitHub CLI 'gh' not found."
 
-# Ensure op has a usable session (desktop-app integration or 'op signin').
-if ! op whoami >/dev/null 2>&1; then
-  printf 'Signing in to 1Password...\n'
-  eval "$(op signin)" 2>/dev/null || die "1Password sign-in failed. Run 'op account add' first, or enable the desktop-app CLI integration."
-fi
-
+# No explicit sign-in step: with 1Password desktop-app integration, `op read`
+# authenticates on demand (Touch ID). (`op whoami` intentionally reports "not
+# signed in" under integration — there's no session token — so we don't gate on
+# it.) If you use manual sessions instead, run `eval "$(op signin)"` first.
 printf 'Reading the token from 1Password (%s)...\n' "$OP_REF"
-token="$(op read "$OP_REF")" || die "Could not read the token. Check FACTORY_OP_REF points at the item (op://vault/item/field)."
+token="$(op read "$OP_REF")" || die "Could not read the token. Ensure the 1Password app is unlocked with CLI integration on (Settings > Developer), and FACTORY_OP_REF points at the item (op://vault/item/field)."
 [ -n "$token" ] || die "1Password returned an empty value for $OP_REF."
 
 printf '%s' "$token" | gh secret set "$SECRET_NAME" --repo "$REPO" || die "Failed to set $SECRET_NAME on $REPO."
