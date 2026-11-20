@@ -21,7 +21,10 @@ die() { printf 'error: %s\n' "$1" >&2; exit 1; }
 command -v gh >/dev/null 2>&1 || die "GitHub CLI 'gh' not found."
 
 printf 'Paste the Claude Code OAuth token (input hidden), then press Enter:\n> '
-read -rs token
+# `|| true`: under `set -e`, read returns non-zero at EOF (e.g. piped input with
+# no trailing newline) and would abort silently; the emptiness check below is the
+# real guard for "nothing entered".
+read -rs token || true
 printf '\n'
 [ -n "${token:-}" ] || die "No token entered — nothing changed."
 
