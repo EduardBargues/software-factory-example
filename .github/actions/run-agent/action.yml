@@ -47,7 +47,7 @@ runs:
   using: composite
   steps:
     - id: agent
-      uses: anthropics/claude-code-action@v1
+      uses: anthropics/claude-code-action@c84e279f859e2591391e95bd309286eb111c345f # v1
       with:
         # inputs.oauth-token, NOT secrets.* — composite actions have no secrets context.
         # The workflow reads the secret and passes it in as this input (still masked in logs).
