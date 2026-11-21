@@ -136,8 +136,9 @@ jobs:
           SUMMARY: ${{ steps.implement.outputs.response }}
         run: |
           # SUMMARY is passed as a %s argument (never interpolated/executed).
+          # "Closes #N" is a GitHub keyword — merging the PR auto-closes the issue.
           printf '%s\n' \
-            "Implements #${ISSUE_NUMBER} via an agent:implement run." "" \
+            "Closes #${ISSUE_NUMBER} (implemented via an agent:implement run)." "" \
             "## Agent summary" "" "${SUMMARY}" "" \
             "---" \
             "Draft — the commits went through the pre-commit brakes. Review before marking ready." \
