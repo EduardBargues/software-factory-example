@@ -127,9 +127,11 @@ jobs:
           VERDICT: ${{ steps.explore.outputs.response }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          last="$(printf '%s\n' "$VERDICT" | grep -E '^VERDICT:' | tail -n1 || true)"
-          echo "verdict line: ${last:-<none>}"
-          if printf '%s' "$last" | grep -qiE '^VERDICT:[[:space:]]*easy-call'; then
+          # The agent may wrap the verdict in backticks (`VERDICT: easy-call`), so
+          # extract the token itself instead of anchoring on the start of the line.
+          verdict="$(printf '%s\n' "$VERDICT" | grep -ioE 'VERDICT:[[:space:]]*(easy-call|needs-a-human|blocked)' | tail -n1 || true)"
+          echo "verdict: ${verdict:-<none>}"
+          if printf '%s' "$verdict" | grep -qi 'easy-call'; then
             echo "easy-call — advancing to implement"
             gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --add-label "agent:implement"
           else
