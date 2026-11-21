@@ -9,17 +9,16 @@ This repo is a working reference implementation: a label-triggered agent pipelin
 ## What it does
 
 ```
-issue  →  explore  →  implement  →  review  →  human merges  →  deploy
-         (verdict)   (draft PR)   (fixes +                     (OIDC → AWS)
-                                   marks ready)
+issue  →  explore  →  implement  →  review  →  human merge      ·  deploy
+         (verdict)   (draft PR)   (fixes, marks ready)             (planned)
 ```
 
-A ticket becomes a pull request on its own. A read-only **explore** pass triages the issue and posts a verdict; **implement** builds the change and opens a draft PR; **review** fixes what is safe and flags the rest for a human; then a person makes the final merge call. Every step runs on GitHub Actions, and every commit goes through the brakes.
+A ticket becomes a pull request on its own. A read-only **explore** pass triages the issue and posts a verdict; **implement** builds the change and opens a draft PR; **review** fixes what is safe and flags the rest for a human; then a person makes the final merge call. Every step runs on GitHub Actions, and every commit goes through the brakes. (Automatic **deploy** on merge is designed — see the spec — but not yet built.)
 
 ## Why it's different
 
 - **Brakes before speed.** Three independent brakes gate every change (below). The rule is simple: *accelerate only once you can brake.*
-- **Zero stored credentials.** The agent authenticates to Claude via GitHub OIDC → Anthropic Workload Identity Federation, and to AWS via OIDC-assumed IAM roles. No long-lived API keys or cloud keys live in the repo — GitHub mints a short-lived token per run.
+- **Zero stored credentials.** The agent authenticates to Claude via GitHub OIDC → Anthropic Workload Identity Federation — no API key is stored anywhere; GitHub mints a short-lived token per run. (The planned AWS deploy uses the same keyless pattern: OIDC-assumed IAM roles.)
 - **Prompt-injection aware.** Issue and PR text is treated as **data, never instructions**. The explore pass runs read-only, so a malicious public issue can't make the factory run commands or leak secrets.
 - **The agent can't weaken its own guardrails.** Agents are forbidden from editing `.github/`, the pre-commit hooks, or `.config/`, and may never commit with `--no-verify`. The factory's brakes are not something the factory can disable.
 - **A trust ladder, not an on/off switch.** Human gates are removed one at a time, only after the logs show the agent reliably nails a hand-off. Today two gates remain; auto-merge is deliberately still off.
@@ -36,14 +35,14 @@ Nothing reaches `main` that hasn't passed all three:
 ## Security by default
 
 - **No Claude credential stored** — GitHub OIDC is exchanged for a short-lived Claude token per run (Workload Identity Federation).
-- **No AWS keys stored** — deploys assume scoped IAM roles via OIDC (a narrow read/plan role and a narrower deploy role).
+- **Keyless by design** — the planned AWS deploy assumes scoped IAM roles via OIDC (a narrow read/plan role and a narrower deploy role); no long-lived cloud keys.
 - **Least privilege** — write-mode runs check out with no token left on disk; the automation PAT is fine-grained and scoped to this one repo.
 - **Guarded entry** — only triage-or-above collaborators can start a run, so a stranger's issue on a public repo can't spend an agent.
 - **Change-class awareness** — one-way-door and security-sensitive changes (auth, data migrations, infra) are never auto-merge candidates.
 
-## Built for Python apps on AWS
+## Built for Python apps
 
-Bring your own application. The factory targets a Python app deployed to AWS and ships a **two-tier deploy**: Terraform infrastructure with *apply-before-merge*, and application code that ships on merge via OIDC — reversible changes fast, one-way-door changes gated behind a human.
+Bring your own application. The factory targets a Python app that lives in the same repo and builds it ticket by ticket through the same brakes. A **two-tier AWS deploy** (Terraform infrastructure with *apply-before-merge*, app code shipped on merge via OIDC) is specified in the [factory spec](docs/factory/SPEC.md) but **not yet built**.
 
 ## How it's put together
 
