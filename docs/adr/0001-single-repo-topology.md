@@ -27,7 +27,7 @@ I want to build a software factory for Python apps deployed to AWS, starting fro
 
 ## Consequences
 
-- The design is captured in **two specs** — [`docs/factory/SPEC.md`](../factory/SPEC.md) (the pipeline, bootstrapped by hand) and [`docs/app/SPEC.md`](../app/SPEC.md) (the factory's first workload, built by the factory) — but **one repo**. Two specs is a separation of *concern and lifecycle*, not of repository; splitting into two repos remains deferred per the Choice above.
+- The factory design is captured in [`docs/factory/SPEC.md`](../factory/SPEC.md) (the pipeline, bootstrapped by hand); the application it builds lives in the **same repo** (`src/` + `infra/`). Keeping them together is a separation of *concern and lifecycle*, not of repository; splitting into two repos remains deferred per the Choice above.
 - FACTORY_PAT is scoped to exactly one repo.
 - Infra vs app lifecycles are distinguished by path filters, not repo boundaries.
 - If faithfully reproducing the work's platform/product **repo** boundary later becomes a goal, revisit this ADR.

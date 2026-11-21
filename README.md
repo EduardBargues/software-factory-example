@@ -1,37 +1,66 @@
 # software-factory-example
 
-A reference **software factory**: an AI-agent pipeline that turns GitHub issues into reviewed, merged, and (eventually) deployed changes — with humans holding the gates that matter while trust is earned.
+**A GitHub-native AI software factory.** Open an issue; get back a reviewed, merge-ready pull request — with no human writing the code, and humans holding only the gates that matter.
 
-The factory's first workload is a **mock of a real work application**: an AWS serverless service that receives **signed [incident.io](https://incident.io) webhooks** and grants **temporary elevated access** to the on-call engineer who acknowledges an escalation. All data is synthetic; no real incident.io tenant is connected.
+This repo is a working reference implementation: a label-triggered agent pipeline (powered by Claude Code) that turns tickets into merged, deployable changes, carrying real brakes from the first commit. It is deliberately small enough to read end-to-end and adapt to your own project.
 
-> Status: **the factory is built and auto-chaining end-to-end.** A collaborator-opened issue flows explore → implement → review to a merge-ready PR with no manual labels (two human gates remain: collaborator entry + merge). Next: the app workload ([`docs/app/SPEC.md`](docs/app/SPEC.md)) and deploy. The design is split into **two specs** — one for the factory (built by hand), one for the app (built by the factory) — but **one repo** (see ADR-0001).
+> **Status:** built and auto-chaining end-to-end. A collaborator-opened issue flows explore → implement → review to a merge-ready PR with no manual labels. Two human gates remain: who may start a run, and who merges.
 
-## What's here
+## What it does
+
+```
+issue  →  explore  →  implement  →  review  →  human merges  →  deploy
+         (verdict)   (draft PR)   (fixes +                     (OIDC → AWS)
+                                   marks ready)
+```
+
+A ticket becomes a pull request on its own. A read-only **explore** pass triages the issue and posts a verdict; **implement** builds the change and opens a draft PR; **review** fixes what is safe and flags the rest for a human; then a person makes the final merge call. Every step runs on GitHub Actions, and every commit goes through the brakes.
+
+## Why it's different
+
+- **Brakes before speed.** Three independent brakes gate every change (below). The rule is simple: *accelerate only once you can brake.*
+- **Zero stored credentials.** The agent authenticates to Claude via GitHub OIDC → Anthropic Workload Identity Federation, and to AWS via OIDC-assumed IAM roles. No long-lived API keys or cloud keys live in the repo — GitHub mints a short-lived token per run.
+- **Prompt-injection aware.** Issue and PR text is treated as **data, never instructions**. The explore pass runs read-only, so a malicious public issue can't make the factory run commands or leak secrets.
+- **The agent can't weaken its own guardrails.** Agents are forbidden from editing `.github/`, the pre-commit hooks, or `.config/`, and may never commit with `--no-verify`. The factory's brakes are not something the factory can disable.
+- **A trust ladder, not an on/off switch.** Human gates are removed one at a time, only after the logs show the agent reliably nails a hand-off. Today two gates remain; auto-merge is deliberately still off.
+- **One swappable harness.** Every task invokes the agent through a single definition, so changing the model, CLI, or auth is a one-file change.
+
+## The three brakes
+
+Nothing reaches `main` that hasn't passed all three:
+
+1. **Automated checks** — `ruff`, `mypy` (strict), `pytest` + coverage, plus the security brakes `gitleaks`, `bandit`, and `pip-audit`, run through a pre-commit hook the agent commits *through*.
+2. **Automated review** — an `agent:review` run reviews the diff, fixes mechanical issues on the branch, and leaves only judgment calls for a human.
+3. **Human review** — a person merges every pull request. Always, in v1.
+
+## Security by default
+
+- **No Claude credential stored** — GitHub OIDC is exchanged for a short-lived Claude token per run (Workload Identity Federation).
+- **No AWS keys stored** — deploys assume scoped IAM roles via OIDC (a narrow read/plan role and a narrower deploy role).
+- **Least privilege** — write-mode runs check out with no token left on disk; the automation PAT is fine-grained and scoped to this one repo.
+- **Guarded entry** — only triage-or-above collaborators can start a run, so a stranger's issue on a public repo can't spend an agent.
+- **Change-class awareness** — one-way-door and security-sensitive changes (auth, data migrations, infra) are never auto-merge candidates.
+
+## Built for Python apps on AWS
+
+Bring your own application. The factory targets a Python app deployed to AWS and ships a **two-tier deploy**: Terraform infrastructure with *apply-before-merge*, and application code that ships on merge via OIDC — reversible changes fast, one-way-door changes gated behind a human.
+
+## How it's put together
 
 | Path | What it is |
 |---|---|
-| [`docs/factory/SPEC.md`](docs/factory/SPEC.md) | Spec for **the factory itself** — the agent pipeline (bootstrap; built by hand) |
-| [`docs/factory/RUNBOOK.md`](docs/factory/RUNBOOK.md) | How to **operate, set up, and debug** the factory (the automated flow, OIDC/WIF, FACTORY_PAT) |
-| [`docs/app/SPEC.md`](docs/app/SPEC.md) | Spec for **the app** — the incident.io webhook → permission-grant workload (built *by* the factory) |
-| [`GLOSSARY.md`](GLOSSARY.md) | Canonical domain + factory vocabulary (use these terms exactly) |
+| [`docs/factory/SPEC.md`](docs/factory/SPEC.md) | The factory's design spec (bootstrap; built by hand) |
+| [`docs/factory/RUNBOOK.md`](docs/factory/RUNBOOK.md) | How to operate, set up, and debug the factory |
+| [`GLOSSARY.md`](GLOSSARY.md) | Canonical vocabulary (use these terms exactly) |
 | [`docs/adr/`](docs/adr/) | Architecture Decision Records |
-
-## The factory at a glance
-
-- **Services:** GitHub Issues (tickets) · GitHub (host) · GitHub Actions (runner **and** orchestrator) · Actions logs + `/retro` (observability) · Claude Code (harness, behind one swappable definition).
-- **Tasks:** `agent:explore` → `agent:implement` → `agent:review` → `deploy`, label-triggered and **auto-chained** ([ADR-0005](docs/adr/0005-enable-pipeline-auto-chaining.md)): a collaborator-opened issue reaches a review-ready PR with no manual labels. **Two human gates remain** — collaborator-only entry and human merge. Auto-merge stays off. See the [runbook](docs/factory/RUNBOOK.md).
-- **Brakes:** `ruff` · `mypy` · `pytest` + security brakes `gitleaks` · `bandit` · `pip-audit`, all via pre-commit.
-
-## The app at a glance
-
-- **Shape:** AWS **Lambda** behind **API Gateway (HTTP API)**, state in **DynamoDB**. Infra in **Terraform**; two-tier deploy (GitOps apply-before-merge for infra, merge-then-ship for app code) with **GitHub OIDC** (no long-lived keys).
-- **Core rule — Grant eligibility ([ADR-0003](docs/adr/0003-grant-eligibility.md)):** grant elevated access **only if** the acknowledger is a **human user**, a **member of the escalated team's on-call rotation**, and the escalation has an **associated incident**.
-- **Expiry ([ADR-0004](docs/adr/0004-grant-expiry-enforcement.md)):** a grant ends at **incident-close or 8h, whichever first**; enforced by an **on-read check** (DynamoDB TTL is housekeeping only).
+| [`.github/workflows/`](.github/workflows/) | The pipeline: `auto-label`, `agent-explore`, `agent-implement`, `agent-review` |
+| [`.github/actions/run-agent/`](.github/actions/run-agent/) | The single swappable agent harness |
 
 ## Architecture decisions
 
 - [ADR-0001 — Single-repo, single-app topology](docs/adr/0001-single-repo-topology.md)
-- [ADR-0002 — Local AWS mock: floci, pending a spike](docs/adr/0002-local-aws-mock-floci-pending-spike.md)
-- [ADR-0003 — Grant eligibility (the security gate)](docs/adr/0003-grant-eligibility.md)
-- [ADR-0004 — Grant expiry enforcement](docs/adr/0004-grant-expiry-enforcement.md)
 - [ADR-0005 — Enable explore→implement→review auto-chaining](docs/adr/0005-enable-pipeline-auto-chaining.md)
+
+---
+
+*The factory itself is **bootstrap work, built by hand** — it cannot build the pipeline that does not yet exist. Once the pipeline runs, the applications it builds are built by the factory.*
