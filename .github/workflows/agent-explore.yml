@@ -1,6 +1,8 @@
 # agent:explore — the factory's read-only front door (factory SPEC D6, stories 2, 3, 17).
-# A human applies the `agent:explore` label; a read-only run investigates the issue
-# and posts a ~20-line verdict. Issue text is treated as data, not instructions.
+# The `agent:explore` label is applied by auto-label (collaborator-opened issues) or
+# by hand. A read-only run investigates the issue and posts a ~20-line verdict.
+# Issue text is treated as data, not instructions. On a `VERDICT: easy-call`, the run
+# auto-advances by applying `agent:implement`; other verdicts stop for a human.
 name: agent-explore
 
 on:
@@ -114,3 +116,22 @@ jobs:
               issue_number: context.issue.number,
               body,
             });
+
+      # Auto-advance: on an easy-call verdict, enter the implement stage. Applied
+      # via FACTORY_PAT so the `labeled` event triggers agent-implement. Other
+      # verdicts (needs-a-human / blocked) stop here for a human to decide.
+      - name: Advance to implement on easy-call
+        if: steps.explore.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+          VERDICT: ${{ steps.explore.outputs.response }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          last="$(printf '%s\n' "$VERDICT" | grep -E '^VERDICT:' | tail -n1 || true)"
+          echo "verdict line: ${last:-<none>}"
+          if printf '%s' "$last" | grep -qiE '^VERDICT:[[:space:]]*easy-call'; then
+            echo "easy-call — advancing to implement"
+            gh issue edit "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --add-label "agent:implement"
+          else
+            echo "not easy-call — leaving for a human"
+          fi
