@@ -1,8 +1,9 @@
 # agent:implement — build a ticket in write mode and open a DRAFT PR
-# (factory SPEC D6, stories 13-15). A human applies the label after reading the
-# explore verdict. The agent edits + commits THROUGH the pre-commit brakes
-# (no --no-verify, never touching .github/ or the hooks); the workflow pushes and
-# opens the draft PR via FACTORY_PAT so the PR's own `brakes` CI runs.
+# (factory SPEC D6, stories 13-15). The `agent:implement` label is applied by
+# agent-explore on an easy-call verdict, or by hand. The agent edits + commits
+# THROUGH the pre-commit brakes (no --no-verify, never touching .github/ or the
+# hooks); the workflow pushes and opens the draft PR via FACTORY_PAT so the PR's own
+# `brakes` CI runs, then auto-advances by applying `agent:review` to the PR.
 name: agent-implement
 
 on:
@@ -141,9 +142,26 @@ jobs:
             "---" \
             "Draft — the commits went through the pre-commit brakes. Review before marking ready." \
             > /tmp/pr_body.md
-          url="$(gh pr create --draft --base main --head "$BRANCH" \
-            --title "Implement #${ISSUE_NUMBER}: ${ISSUE_TITLE}" --body-file /tmp/pr_body.md)"
+          # Idempotency: a manual re-label must not open a second PR. Reuse the open
+          # PR for this branch if one already exists.
+          existing="$(gh pr list --head "$BRANCH" --state open --json url --jq '.[0].url' 2>/dev/null || true)"
+          if [ -n "$existing" ]; then
+            url="$existing"
+            echo "Reusing existing PR: $url"
+          else
+            url="$(gh pr create --draft --base main --head "$BRANCH" \
+              --title "Implement #${ISSUE_NUMBER}: ${ISSUE_TITLE}" --body-file /tmp/pr_body.md)"
+          fi
           echo "pr_url=${url}" >> "$GITHUB_OUTPUT"
+
+      # Auto-advance: hand the draft PR to the review stage. FACTORY_PAT makes the
+      # PR `labeled` event trigger agent-review.
+      - name: Advance to review
+        if: steps.pr.outputs.pr_url != ''
+        env:
+          GH_TOKEN: ${{ secrets.FACTORY_PAT }}
+          PR_URL: ${{ steps.pr.outputs.pr_url }}
+        run: gh pr edit "$PR_URL" --add-label "agent:review"
 
       - name: Comment the PR link on the issue
         if: always()
