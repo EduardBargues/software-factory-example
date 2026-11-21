@@ -17,9 +17,9 @@ I don't yet have a factory. I have the methodology (captured as `course-*` skill
 
 ## Solution
 
-A **single-repo, bespoke software factory** for one greenfield Python app (topology per [ADR-0001](../adr/0001-single-repo-topology.md)). The factory is built on GitHub-native services and runs four label-triggered agent **tasks** (explore → implement → review → deploy). For v1, **every human gate is manned**: a human applies each `agent:*` label by hand, reads each run's output, and merges every PR. No auto-chaining, no auto-merge.
+A **single-repo, bespoke software factory** for one greenfield Python app (topology per [ADR-0001](../adr/0001-single-repo-topology.md)). The factory is built on GitHub-native services and runs four label-triggered agent **tasks** (explore → implement → review → deploy). The explore→implement→review hand-offs are **auto-chained** ([ADR-0005](../adr/0005-enable-pipeline-auto-chaining.md)): a collaborator-opened issue flows to a review-ready PR with no manual labels. **Two human gates remain**: only collaborator-authored issues enter the factory, and a human merges every PR. Auto-merge stays off.
 
-Success for v1 = **a ticket becomes a reviewed, merged PR with no human writing the code**, all brakes green, and a deployed change reaching AWS via the deploy task. That end-to-end proof is run against the first workload (the app spec). Full autonomy (auto-chaining, auto-merge) is explicitly deferred.
+Success for v1 = **a ticket becomes a reviewed, merged PR with no human writing the code**, all brakes green, and a deployed change reaching AWS via the deploy task. That end-to-end proof is run against the first workload (the app spec). Auto-chaining of explore→implement→review is **enabled** ([ADR-0005](../adr/0005-enable-pipeline-auto-chaining.md)); **auto-merge** remains explicitly deferred.
 
 ---
 
@@ -30,14 +30,14 @@ Success for v1 = **a ticket becomes a reviewed, merged PR with no human writing 
 1. As a factory operator, I want to file a GitHub issue describing a change, so that the factory has a unit of work to act on.
 2. As a factory operator, I want to apply an `agent:explore` label to an issue, so that a read-only run investigates it before any code is written.
 3. As a factory operator, I want the explore run to post a short (~20-line) verdict comment classifying blast radius and door type, so that I can decide whether to proceed without reading the whole codebase myself.
-4. As a factory operator, I want to apply `agent:implement` by hand after reading the explore verdict, so that I stay the approval gate between exploration and implementation.
+4. As a factory operator, I want `agent:implement` applied automatically when explore returns `easy-call` (and to apply it by hand after a `needs-a-human` verdict I judge safe), so that easy work flows without me while judgment calls still wait for me ([ADR-0005](../adr/0005-enable-pipeline-auto-chaining.md)).
 5. As a factory operator, I want the implement run to open a **draft** PR, so that nothing looks "ready" until it has been reviewed.
 6. As a factory operator, I want to apply `agent:review` (or have implement apply it) so that an automated review pass runs before I spend human attention.
 7. As a factory operator, I want the review run to fix what it can on the branch and leave only judgment calls as inline comments, so that human review is as small as possible.
 8. As a factory operator, I want to be the one who merges every PR in v1, so that I retain the final gate while I learn where the agent errs.
 9. As a factory operator, I want merging an app-code PR to trigger a deploy run, so that merged changes reach AWS without a manual deploy step.
 10. As a factory operator, I want to run `/retro` over a run's logs, so that I can turn recurring agent struggles into new checks or coding standards.
-11. As a factory operator, I want to remove one human gate at a time (starting with explore→implement auto-chaining) only after `/retro` shows the agent reliably nails that hand-off, so that I climb the trust ladder deliberately.
+11. As a factory operator, I want to climb the trust ladder by removing gates deliberately: explore→implement→review auto-chaining is now **enabled** ([ADR-0005](../adr/0005-enable-pipeline-auto-chaining.md)) after all three tasks were proven on canary tickets; **auto-merge** is the next rung, gated on `/retro` evidence.
 12. As a factory operator, I want only triage-role-or-above collaborators to be able to apply `agent:*` labels, so that a random visitor to the public repo cannot start a run.
 
 **Task contracts (how each run must behave)**
@@ -103,8 +103,9 @@ Decisions are recorded as **Situation → Options → Choice → Why**. Full ADR
 - **Choice:** uv (deps/lockfile) · ruff (lint+format) · mypy (types) · pytest+coverage, all run via a pre-commit hook the agent commits through (no `--no-verify`, no editing hooks). **Security brakes (non-negotiable):** gitleaks/detect-secrets · bandit (Python SAST) · pip-audit (dependency CVE).
 - **Why:** *Accelerate only once you can brake.* For a permission-granting app, secret scanning + SAST + CVE checks are load-bearing, not optional. Repo-wide violations become coding standards or ratchet items, never pre-broken checks.
 
-### D6 — Tasks (four, label-triggered)
-- `agent:explore` — read-only; reproduces the ticket, finds files/lines, classifies blast radius + door, leaves verdict (`easy-call` / `needs-a-human` / `blocked`) + ~20-line comment. Prompt-injection defense: issue text is data, read-only, network isolation.
+### D6 — Tasks (four, label-triggered) + the entry gate
+- `auto-label` — the entry gate ([ADR-0005](../adr/0005-enable-pipeline-auto-chaining.md)): on `issues: opened`, applies `agent:explore` **only when the issue author is a collaborator** (triage+). Non-collaborator issues never enter.
+- `agent:explore` — read-only; reproduces the ticket, finds files/lines, classifies blast radius + door, leaves verdict (`easy-call` / `needs-a-human` / `blocked`) + ~20-line comment. On `easy-call`, applies `agent:implement` to auto-advance; other verdicts stop for a human. Prompt-injection defense: issue text is data, read-only, network isolation.
 - `agent:implement` — builds the ticket, commits through pre-commit, pushes a **draft** PR, applies `agent:review`.
 - `agent:review` — reviews vs spec + standards, drives handler against the local mock with a signed webhook, fixes what it can on branch, leaves inline comments, marks PR ready.
 - `deploy` (app-code tier) — on merge to `main`, OIDC, bump Lambda alias.
@@ -115,7 +116,7 @@ Decisions are recorded as **Situation → Options → Choice → Why**. Full ADR
 - **Approval boundary:** the label. Only triage-role-or-above collaborators can apply `agent:*` labels.
 
 ### D8 — Human involvement (v1) and the trust ladder
-- **v1:** manual label hand-off at **every** step; all five gates manned (Explore → Approve → Implement → Review → Merge). No auto-chaining. **Auto-merge off entirely.**
+- **v1 (current):** explore→implement→review is **auto-chained** ([ADR-0005](../adr/0005-enable-pipeline-auto-chaining.md)). **Two gates stay manned:** (1) **entry** — only a collaborator-authored issue auto-enters (via `auto-label`), and (2) **merge** — a human merges every PR. **Auto-merge is off entirely.**
 - **Later (defined, not enabled):** auto-merge requires all three brakes green + two-way door + small blast radius + no data migrations + app-code tier only. **Never** for infra, DynamoDB/Aurora schema changes (data migrations), or auth/signature-verification/permission-decision code.
 
 ---
@@ -130,7 +131,7 @@ The four tasks are validated by **running them on a canary ticket**, not by unit
 
 Design each so adding it later is a **new task, not a refactor**:
 
-- **Auto-chaining** of tasks and **auto-merge** (criteria defined in D8, but disabled).
+- **Auto-merge** (criteria defined in D8, but disabled). *(Auto-chaining of explore→implement→review is now enabled — [ADR-0005](../adr/0005-enable-pipeline-auto-chaining.md).)*
 - **Langfuse** (or any external observability platform).
 - **Ticket sources** — CloudWatch alarms / Sentry auto-filing tickets via the push→pull monitor pattern — deferred until the app is deployed and taking traffic.
 - **A separate infrastructure repository** — stay one-repo now; extract an infra repo later *as a factory exercise* once infra stabilizes.
