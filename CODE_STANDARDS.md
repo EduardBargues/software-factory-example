@@ -1,20 +1,19 @@
 # Code Standards
 
-The **fuzzy** conventions the `agent:review` brake enforces — the ones a deterministic check can't express. The deterministic rules already live in the brakes (`ruff`, `mypy`, `pytest`, `gitleaks`, `bandit`, `pip-audit`); this file is only for what a human reviewer would catch but a linter can't.
+The **fuzzy** conventions the `agent:review` brake enforces — the ones a deterministic check can't express. Deterministic rules live in the brakes (`ruff`, `mypy`, `pytest`, `gitleaks`, `bandit`, `pip-audit`); this file is only for what a careful human reviewer would catch but a linter can't.
 
-**How to use this file**
+**This file starts empty on purpose.** Standards are *earned*, not guessed: each one should come from a real miss surfaced by `/retro`, not from speculation about code that doesn't exist yet. An invented rule is sediment before it is ever useful.
 
-- **Prefer a check over a rule.** When you catch a miss, first ask: *can this be a deterministic check* (a lint rule, a test, a custom script)? If yes, add the check — it guards the repo every time, where the review agent is probabilistic and may miss it again. Only put it here if it is genuinely fuzzy.
-- **Keep it lean.** This file rots into stale, duplicated, or vague rules ("sediment" / "no-ops") as entries pile up. `/retro` prunes it: delete anything that doesn't change behavior, and push anything mechanizable down into a check.
+**How it grows**
+
+- When a run gets something wrong that the brakes didn't catch, run `/retro`. For each finding, decide:
+  - **Can it be a deterministic check?** (a lint rule, a test, a custom script) → build the check. It guards the repo every time, where the review agent is probabilistic and may miss it again. *Prefer this.*
+  - **Is it genuinely fuzzy** — un-mechanizable judgment? → add a short rule below.
+  - **Is it a process rule** (about workflow, not about the diff)? → it belongs in the spec or config, not here.
+- Keep it lean. Prune no-ops (lines you can delete without changing the agent's output) and duplicates whenever the file grows.
+- Don't duplicate the other steering files: vocabulary lives in [`GLOSSARY.md`](GLOSSARY.md), design intent in [`docs/factory/SPEC.md`](docs/factory/SPEC.md). The review run reads all three.
 - Agents that build or review a change **follow** these standards but must **not edit** this file — it is a guardrail, curated by a human or `/retro`.
 
 ## Standards
 
-1. **Smallest correct change.** Implement exactly the ticket; don't refactor or reformat unrelated code. Match the surrounding code's naming, structure, and **comment density** — read as the existing code reads, neither over-commenting nor narrating.
-2. **Use the glossary's terms exactly.** Names, comments, and messages use the vocabulary in [`GLOSSARY.md`](GLOSSARY.md); avoid the listed alternatives so humans and agents don't drift.
-3. **Test behavior at the highest useful seam, with the fewest seams.** Assert on observable behavior, not implementation detail. A passing suite should actually notice a regression.
-4. **Keep domain logic free of I/O and cloud SDKs (hexagonal).** The domain is testable with zero AWS; adapters are the only cloud-touching code. Depend on ports, not concrete services.
-5. **Treat all external input as untrusted.** Validate and sanitize at the boundary; never interpolate untrusted input into a query, command, or template.
-6. **Security-sensitive code gets extra scrutiny.** Anything that authenticates, verifies a signature, or decides access is never a silent change — flag it for a human, and it is never an auto-merge candidate.
-7. **Errors are actionable.** A failure says what went wrong and how to proceed; no bare tracebacks or vague messages as the user-facing result.
-8. **Dependencies are a liability.** Add one only when it clearly pays for itself; it must be reputable, actively maintained, and CVE-clean. Prefer the standard library.
+_(none yet — the first one will come from a `/retro` finding)_
