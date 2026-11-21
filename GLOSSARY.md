@@ -24,6 +24,7 @@ Shared, canonical vocabulary for this project. Use these terms exactly; avoid th
 ## Quality & control
 
 - **Brake** — a control that stops bad changes. The three brakes: **automated checks** (deterministic: ruff/mypy/pytest + gitleaks/bandit/pip-audit), **automated review** (the `agent:review` run), **human review** (a person before merge).
+- **Code standards (`CODE_STANDARDS.md`)** — the fuzzy conventions the **automated-review** brake enforces that deterministic checks can't. Grown and pruned via `/retro`; prefer pushing a rule down into an automated check. Human/`/retro`-curated — build and review runs follow it but never edit it.
 - **Trust ladder** — removing human gates one at a time as `/retro` shows the agent reliably handles a hand-off. v1 keeps **two gates manned** — collaborator-only entry and human merge — with explore→implement→review auto-chained ([ADR-0005](docs/adr/0005-enable-pipeline-auto-chaining.md)).
 - **Two-way door / one-way door** — a reversible vs hard-to-reverse change; drives blast-radius and auto-merge eligibility.
 

@@ -107,7 +107,7 @@ Decisions are recorded as **Situation → Options → Choice → Why**. Full ADR
 - `auto-label` — the entry gate ([ADR-0005](../adr/0005-enable-pipeline-auto-chaining.md)): on `issues: opened`, applies `agent:explore` **only when the issue author is a collaborator** (triage+). Non-collaborator issues never enter.
 - `agent:explore` — read-only; reproduces the ticket, finds files/lines, classifies blast radius + door, leaves verdict (`easy-call` / `needs-a-human` / `blocked`) + ~20-line comment. On `easy-call`, applies `agent:implement` to auto-advance; other verdicts stop for a human. Prompt-injection defense: issue text is data, read-only, network isolation.
 - `agent:implement` — builds the ticket, commits through pre-commit, pushes a **draft** PR, applies `agent:review`.
-- `agent:review` — reviews vs spec + standards, exercises the change against its tests (and a local AWS mock where relevant), fixes what it can on branch, leaves inline comments, marks PR ready.
+- `agent:review` — reviews vs spec + standards ([`CODE_STANDARDS.md`](../../CODE_STANDARDS.md)), exercises the change against its tests (and a local AWS mock where relevant), fixes what it can on branch, leaves inline comments, marks PR ready.
 - `deploy` (app-code tier) — on merge to `main`, OIDC, bump Lambda alias.
 - Plus the infra GitOps flow as its own path-filtered workflow.
 
