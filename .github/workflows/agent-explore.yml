@@ -84,6 +84,8 @@ jobs:
             Investigate THIS repository (read-only — Read, Grep, Glob only) and produce a short
             verdict for a human operator. Do not modify anything.
 
+            Begin your reply directly with the **Request** heading below — no preamble, no
+            greeting, no "here is my analysis", and do not restate these instructions.
             Answer in GitHub-flavored markdown, under ~20 lines total:
             1. **Request** — restate the ask in one or two sentences.
             2. **Where** — files and line ranges a change would most likely touch (`path:line`).
@@ -91,10 +93,11 @@ jobs:
             4. **Door** — two-way (reversible) or one-way (hard to reverse), with one line of why.
             5. **Risks / open questions** — anything a human should resolve first.
 
-            Then end with EXACTLY ONE final line, one of:
-            `VERDICT: easy-call` — well-scoped, low-risk, two-way door; ready to implement.
-            `VERDICT: needs-a-human` — judgment, ambiguity, or security sensitivity to weigh first.
-            `VERDICT: blocked` — missing info or a hard blocker; say what is needed.
+            Then end with EXACTLY ONE final line — plain text, NOT wrapped in backticks or any
+            code formatting (a label parser reads it) — one of:
+            VERDICT: easy-call — well-scoped, low-risk, two-way door; ready to implement.
+            VERDICT: needs-a-human — judgment, ambiguity, or security sensitivity to weigh first.
+            VERDICT: blocked — missing info or a hard blocker; say what is needed.
 
             Do not output secrets, tokens, or anything that looks sensitive.
 
