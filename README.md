@@ -55,6 +55,20 @@ Bring your own application. The factory targets a Python app that lives in the s
 | [`.github/workflows/`](.github/workflows/) | The pipeline: `auto-label`, `agent-explore`, `agent-implement`, `agent-review` |
 | [`.github/actions/run-agent/`](.github/actions/run-agent/) | The single swappable agent harness |
 
+## Local development
+
+Install the toolchain and activate the pre-commit hook once, so `git commit` runs
+the same brakes as CI:
+
+```bash
+./scripts/dev-setup.sh
+```
+
+It installs `uv` (if needed), runs `uv sync --locked`, and `pre-commit install`
+using the repo-local public-PyPI config in `.config/pip/` — so commits run
+`ruff`/`mypy`/`pytest` + `gitleaks`/`bandit`/`pip-audit` locally before anything
+reaches CI.
+
 ## Architecture decisions
 
 - [ADR-0001 — Single-repo, single-app topology](docs/adr/0001-single-repo-topology.md)
