@@ -40,6 +40,13 @@ repos:
   # Local hooks run in the project's uv environment so they see real dependencies.
   - repo: local
     hooks:
+      # Keeps files small enough for a coding agent to navigate (feedback loops).
+      # Distinct from check-added-large-files, which only guards binary bloat.
+      - id: file-size-cap
+        name: file-size cap (agent navigability)
+        entry: uv run python scripts/check_file_size.py
+        language: system
+        types: [python]
       - id: mypy
         name: mypy (strict)
         entry: uv run mypy
