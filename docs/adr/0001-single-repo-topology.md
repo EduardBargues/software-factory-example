@@ -1,7 +1,9 @@
 # ADR-0001 — Single-repo, single-app factory topology
 
-- **Status:** Accepted
+- **Status:** Superseded by home-repo `ADR-0001 — Multi-repo factory with a home-repo hub` (`software-factory-example-home-repo/docs/adr/0001-multi-repo-home-repo-topology.md`), 2026-11-22
 - **Date:** 2026-11-19
+
+> **Superseded.** The deferred "separate infra repo … consumed by the app repo" named in the Choice below has been taken: infra now lives in `software-factory-example-terraform`, and shared agent steering lives in a home-repo hub. This ADR is kept for history. See the superseding ADR for the current topology.
 
 ## Situation
 
