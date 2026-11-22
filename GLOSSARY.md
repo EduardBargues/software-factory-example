@@ -29,7 +29,7 @@ Shared, canonical vocabulary for this project. Use these terms exactly; avoid th
 - **Human review** — the third brake; a person before the merge. The most expensive brake; use `/retro` to move its catches down to a lower brake.
 - **Bug** — a wrong change. A brake or a human finds it. _Avoid: defect._
 - **Lint rule** — an automated check that encodes a rule the built-in checks cannot express. The preferred home for a mechanizable rule.
-- **Coding standard (`CODING_STANDARDS.md`)** — a **fuzzy** rule the automated-review brake enforces, for a thing no check can express. Use it only when no check fits. Grown and pruned via `/retro`; build and review runs follow it but never edit it.
+- **Coding standard (`CODING_STANDARDS.md`)** — a **fuzzy** rule the **review** run enforces, for a thing no check can express (the implementer writes a first draft). Use it only when no check fits. Grown and pruned via `/retro`; no run edits it.
 - **No-op** — a standard line you can delete with no change to the agent output. Cut it.
 - **Sediment** — stale, duplicate, or contradictory standards. Prune them.
 - **Trust ladder** — removing human gates one at a time as `/retro` shows the agent reliably handles a hand-off. v1 keeps **two gates manned** — collaborator-only entry and human merge — with explore→implement→review auto-chained ([ADR-0005](docs/adr/0005-enable-pipeline-auto-chaining.md)).
