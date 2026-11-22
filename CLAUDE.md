@@ -9,6 +9,16 @@ Canonical design docs — read these before proposing changes, and use their ter
 - [`GLOSSARY.md`](GLOSSARY.md) — canonical factory vocabulary.
 - [`docs/adr/`](docs/adr/) — Architecture Decision Records.
 
+## Home repo & other repos
+
+This repo is part of a multi-repo setup (home-repo ADR-0001). The hub is
+**`software-factory-example-home-repo`** (`../software-factory-example-home-repo`;
+clone from `https://github.com/EduardBargues/software-factory-example-home-repo.git`
+if missing) — it holds the shared skills, the shared factory `GLOSSARY.md` +
+`GLOSSARY-MAP.md`, and pointers to every repo. Run *cross-repo* agent sessions from
+there. Infrastructure modules live in **`software-factory-example-terraform`**,
+consumed via a pinned `git::…//modules/public/app?ref=<tag>` source.
+
 ## Agent skills
 
 ### Issue tracker
