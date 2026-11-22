@@ -59,6 +59,9 @@ jobs:
           git fetch --no-tags origin main
           echo "BASE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
 
+      # Bring the shared skills from the home repo into the working tree (ADR-0002).
+      - uses: ./.github/actions/load-shared-skills
+
       - name: Install the brakes (so the agent commits fixes through pre-commit)
         uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:

@@ -50,6 +50,9 @@ jobs:
         with:
           fetch-depth: 1
 
+      # Bring the shared skills from the home repo into the working tree (ADR-0002).
+      - uses: ./.github/actions/load-shared-skills
+
       # Prompt-injection defense (story 17): the untrusted issue text is written to
       # a file via env vars — never interpolated into the workflow or the prompt.
       - name: Stage the ticket as data
