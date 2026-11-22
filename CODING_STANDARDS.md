@@ -12,7 +12,7 @@ The **fuzzy** conventions the `agent:review` brake enforces — the ones a deter
   - **Is it a process rule** (about workflow, not about the diff)? → it belongs in the spec or config, not here.
 - Keep it lean. Prune no-ops (lines you can delete without changing the agent's output) and duplicates whenever the file grows.
 - Don't duplicate the other steering files: vocabulary lives in [`GLOSSARY.md`](GLOSSARY.md), design intent in [`docs/factory/SPEC.md`](docs/factory/SPEC.md). The review run reads all three.
-- Agents that build or review a change **follow** these standards but must **not edit** this file — it is a guardrail, curated by a human or `/retro`.
+- The **review** run enforces these standards; the implementer only writes a first draft. No run edits this file — it is a guardrail, curated by a human or `/retro`.
 
 ## Standards
 
