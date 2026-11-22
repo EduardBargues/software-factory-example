@@ -1,5 +1,5 @@
 [project]
-name = "software-factory-example"
+name = "software-factory-example-python"
 version = "0.0.0"
 description = "Mock incident.io webhook -> permission-grant app, built by a software factory."
 requires-python = ">=3.12"

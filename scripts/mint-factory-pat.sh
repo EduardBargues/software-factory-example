@@ -203,7 +203,7 @@ run_wizard() {
 TOTAL_STAGES=3
 
 # Target this repo for all gh calls, regardless of where the script is run.
-export GH_REPO="EduardBargues/software-factory-example"
+export GH_REPO="EduardBargues/software-factory-example-python"
 
 banner "Mint the FACTORY_PAT"
 
@@ -212,11 +212,11 @@ stage "GitHub: new fine-grained token — basics"
 say "The factory's tasks use this token to open PRs and trigger downstream"
 say "runs — the built-in GITHUB_TOKEN can do neither."
 open_url "https://github.com/settings/personal-access-tokens/new"
-step "Token name:        FACTORY_PAT — software-factory-example"
+step "Token name:        FACTORY_PAT — software-factory-example-python"
 step "Resource owner:    EduardBargues"
 step "Expiration:        90 days   (never pick 'No expiration')"
 step "Repository access: choose 'Only select repositories', then select"
-step "                   EduardBargues/software-factory-example  (this repo only)"
+step "                   EduardBargues/software-factory-example-python  (this repo only)"
 note "Don't click 'Generate token' yet — permissions come next."
 pause "Done all of the above? Press Enter."
 

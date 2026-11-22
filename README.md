@@ -1,4 +1,4 @@
-# software-factory-example
+# software-factory-example-python
 
 **A GitHub-native AI software factory.** Open an issue; get back a reviewed, merge-ready pull request — with no human writing the code, and humans holding only the gates that matter.
 
