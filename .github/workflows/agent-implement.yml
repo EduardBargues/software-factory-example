@@ -108,7 +108,11 @@ jobs:
             - Do not stage `.factory/` (it is a scratch dir and is git-ignored).
             - Stop when the working tree is clean and your change is committed with every brake green.
 
-            End with a short summary (a few lines) for the human reviewer: what you changed, why, and anything to double-check.
+            End by writing the PR body, following the `pr` skill template in `.claude/skills/pr/SKILL.md`. Use three sections:
+            - **Summary** — the smallest view that makes the change clear (a diff-sketch, a short file tree, or pseudocode).
+            - **Evidence** — what proves it works: the tests or brakes that now pass; a before/after where you can.
+            - **Merge Danger** — one-way or two-way door, and the blast radius.
+            Keep prose brief, write no preamble, and use the `GLOSSARY.md` terms. Output only that PR body as your final message.
 
       - name: Verify a clean, committed result
         run: |
@@ -140,7 +144,7 @@ jobs:
           # "Closes #N" is a GitHub keyword — merging the PR auto-closes the issue.
           printf '%s\n' \
             "Closes #${ISSUE_NUMBER} (implemented via an agent:implement run)." "" \
-            "## Agent summary" "" "${SUMMARY}" "" \
+            "${SUMMARY}" "" \
             "---" \
             "Draft — the commits went through the pre-commit brakes. Review before marking ready." \
             > /tmp/pr_body.md
