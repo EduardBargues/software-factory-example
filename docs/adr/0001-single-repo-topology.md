@@ -7,7 +7,7 @@
 
 ## Situation
 
-I want to build a software factory for Python apps deployed to AWS, starting from a mock of a sensitive work application. The factory could target one repo, be a reusable template that every new repo adopts, or be a cross-repo meta-factory operating over many repos. The infra could also live in a separate repository (mirroring how the work platform team owns Terraform repos that product teams consume).
+I want to build a software factory for Python apps deployed to AWS, starting from a mock application. The factory could target one repo, be a reusable template that every new repo adopts, or be a cross-repo meta-factory operating over many repos. The infra could also live in a separate repository (mirroring how a platform team owns Terraform repos that product teams consume).
 
 ## Options
 

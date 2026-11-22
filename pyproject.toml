@@ -17,7 +17,7 @@ dev = [
 ]
 
 # Resolve dependencies from public PyPI for this repo, overriding any global
-# pip/uv index config (e.g. a corporate CodeArtifact proxy). This is a public,
+# pip/uv index config (e.g. a token-gated private index). This is a public,
 # synthetic-data repo with only public OSS deps; integrity is still enforced by
 # the hash-pinned uv.lock, so this changes the source, not the verification.
 [[tool.uv.index]]

@@ -13,7 +13,7 @@
 
 I want to apply the "software factory" methodology to real work: turn GitHub tickets into reviewed, merged, and (eventually) deployed changes for **Python applications that run on AWS**, with as little manual code-writing as possible — but without becoming a "slop cannon" that merges low-quality or insecure changes. The factory may build security-sensitive applications, so it must carry real brakes from day one, and a human must stay in control of every gate until trust is earned.
 
-I don't yet have a factory. I have the methodology (captured as `course-*` skills). I need a concrete, buildable plan for a **public, personal** factory built on GitHub-native services.
+I don't yet have a factory. I have the methodology (captured as skills). I need a concrete, buildable plan for a **public, personal** factory built on GitHub-native services.
 
 ## Solution
 
