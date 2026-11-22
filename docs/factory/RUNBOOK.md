@@ -49,50 +49,18 @@ Labels accumulate as an **audit trail** (they are never removed).
 
 ---
 
-## 3. Authentication (GitHub OIDC → Anthropic WIF)
+## 3. Authentication & tokens (how it works)
 
-**No long-lived Claude credential is stored anywhere.** Per run, GitHub mints a short-lived **OIDC token**; the CLI exchanges it, via Anthropic **Workload Identity Federation**, for a short-lived Claude token scoped to this repo.
+Two keyless/scoped token mechanisms — worth knowing when debugging a run. **Setting
+them up** (the secrets, the WIF rule, minting the PAT) is the same for any factory
+repo → see the hub's [**NEW-REPO-CHECKLIST**](https://github.com/EduardBargues/software-factory-example-home-repo/blob/main/docs/factory/NEW-REPO-CHECKLIST.md).
 
-- The workflow grants `id-token: write`. `run-agent` requests an OIDC token with audience `https://api.anthropic.com`, writes it to a file, and exports `ANTHROPIC_IDENTITY_TOKEN_FILE`.
-- With that file set and **no** `ANTHROPIC_API_KEY` / `ANTHROPIC_AUTH_TOKEN`, the CLI performs the federation exchange and refreshes as needed.
-
-### Repo secrets (identifiers, **not** credentials)
-
-These are useless without a valid GitHub OIDC token from *this* repo. They are secrets only to keep the Anthropic org out of a public repo.
-
-| Secret | What it is |
-|---|---|
-| `ANTHROPIC_FEDERATION_RULE_ID` | WIF federation rule (`fdrl_…`) |
-| `ANTHROPIC_ORGANIZATION_ID` | Anthropic organization id |
-| `ANTHROPIC_SERVICE_ACCOUNT_ID` | service account the token acts as (`svac_…`) |
-| `ANTHROPIC_WORKSPACE_ID` | workspace the token is scoped to (`wrkspc_…`) |
-| `FACTORY_PAT` | fine-grained PAT, this repo only — see §4 |
-
-### The WIF federation rule
-
-In the Anthropic console, the rule must accept this repo's GitHub OIDC identity:
-
-- **Audience:** `https://api.anthropic.com`
-- **Subject pattern:** `repo:<owner>@<owner_id>/<repo>@<repo_id>:*`
-  GitHub embeds **numeric** owner/repo ids in the `sub`, so match by id, not name. The trailing `:*` covers both `ref:refs/heads/<branch>` (issue-triggered runs) **and** `pull_request` (PR-triggered runs) subjects — so review runs authenticate with the same rule.
-- **OAuth scope:** `workspace:developer`.
+- **Claude auth (OIDC → Anthropic WIF).** No long-lived Claude key is stored. Per run GitHub mints a short-lived OIDC token (audience `https://api.anthropic.com`); `run-agent` writes it to a file and the CLI exchanges it, via a WIF **federation rule**, for a short-lived Claude token. The rule must match this repo's **immutable** subject `repo:<owner>@<owner_id>/<repo>@<repo_id>:*` (match by numeric id, not name; the `:*` covers both branch- and PR-triggered subjects). A mismatch shows `outcome: failure, reason: match_subject_prefix` in the Anthropic activity log.
+- **FACTORY_PAT (cascade writes).** The built-in `GITHUB_TOKEN` can't trigger downstream workflows or make its PRs run CI, so the stage hand-offs (apply the next label, push, open the PR) use a fine-grained, **this-repo-only** PAT. The label is applied by the PAT owner (a collaborator), so the next stage's `Authorize the labeler` check passes. Write-mode checkouts use `persist-credentials: false` so no token sits in `.git/config` for the agent to read — the PAT is injected only at push/label steps. Mint/rotate with [`scripts/mint-factory-pat.sh`](../../scripts/mint-factory-pat.sh).
 
 ---
 
-## 4. FACTORY_PAT — why a PAT, and its scope
-
-The built-in `GITHUB_TOKEN` **cannot trigger downstream workflows** (an anti-loop guard) and PRs it opens do not run CI. The factory *cascades* — each stage applies the next label, and implement opens a PR that must run its own brakes — so those writes use `FACTORY_PAT`:
-
-- auto-label applies `agent:explore`; explore applies `agent:implement`; implement pushes the branch, opens the PR, applies `agent:review`; review pushes fixes and marks ready.
-- Because the label is applied by the PAT's owner (a collaborator), the next workflow's `Authorize the labeler` check passes.
-
-**Scope:** fine-grained, this repo only; read/write on Actions, Issues, Pull requests, Contents, Workflows; everything else no-access; with an expiry. Mint/rotate it with [`scripts/mint-factory-pat.sh`](../../scripts/mint-factory-pat.sh).
-
-**Least-privilege note:** write-mode checkouts (implement, review) use `persist-credentials: false` so no token sits in `.git/config` for the agent (which has `Bash`) to read; the PAT is injected only in the push/label steps.
-
----
-
-## 5. Operating it
+## 4. Operating it
 
 - **Start work** — open an issue (as a collaborator it auto-enters), or apply `agent:explore` by hand to any existing issue.
 - **Override a stage** — apply `agent:implement` or `agent:review` by hand to run that stage directly (e.g. after a `needs-a-human` verdict you judge safe).
@@ -102,7 +70,7 @@ The built-in `GITHUB_TOKEN` **cannot trigger downstream workflows** (an anti-loo
 
 ---
 
-## 6. Debugging
+## 5. Debugging
 
 **Where to look first:** the repo's **Actions** tab, the failing workflow's run. `run-agent` captures the CLI's stdout/stderr and, on failure, prints them in collapsed groups (short-lived tokens redacted) — so a failure is visible, not a black box.
 
@@ -121,7 +89,7 @@ The built-in `GITHUB_TOKEN` **cannot trigger downstream workflows** (an anti-loo
 
 ---
 
-## 7. Improving the factory (the retro loop)
+## 6. Improving the factory (the retro loop)
 
 The factory improves by turning each miss into a durable guardrail. Do not just fix the one case — move the rule down to the cheapest brake so it cannot recur.
 
@@ -145,7 +113,7 @@ The factory improves by turning each miss into a durable guardrail. Do not just 
 
 **Who owns what.** The implementer writes a first draft (it has the most context pressure). The review run enforces `CODING_STANDARDS.md` (it has a clean diff and spare context). `/retro` output, lint rules, and hooks live in `.github/` and config, so a human builds them — the agents cannot weaken their own brakes.
 
-## 8. Known limitations
+## 7. Known limitations
 
 - **No factory-wide concurrency cap.** A single shared `concurrency` group is *not* used: GitHub keeps only one *pending* run per group and cancels earlier pending ones, which would silently **drop** queued factory work. Per-item groups dedup same-issue / same-PR runs; cross-issue fan-out is naturally low (sequential pipeline, single author). A hard cost cap needs a runner limit or external queue, not Actions concurrency.
 - **"Implements #N"** in the implement PR template is not an auto-close keyword — merged PRs leave their issue open until closed by hand. *(Open follow-up.)*

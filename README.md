@@ -44,6 +44,10 @@ Nothing reaches `main` that hasn't passed all three:
 
 Bring your own application. The factory targets a Python app that lives in the same repo and builds it ticket by ticket through the same brakes. A **two-tier AWS deploy** (Terraform infrastructure with *apply-before-merge*, app code shipped on merge via OIDC) is specified in the [factory spec](docs/factory/SPEC.md) but **not yet built**.
 
+## Part of a multi-repo factory
+
+This repo is the **app** half of a three-repo setup. Shared agent skills, vocabulary, and the cross-repo setup guide live in the **home repo** ([`software-factory-example-home-repo`](https://github.com/EduardBargues/software-factory-example-home-repo)) — run *cross-repo* agent sessions from there, and see its [`NEW-REPO-CHECKLIST`](https://github.com/EduardBargues/software-factory-example-home-repo/blob/main/docs/factory/NEW-REPO-CHECKLIST.md) to stand up a new factory repo. Infrastructure modules live in [`software-factory-example-terraform`](https://github.com/EduardBargues/software-factory-example-terraform), consumed via a pinned `git::…//modules/public/app?ref=<tag>` source.
+
 ## How it's put together
 
 | Path | What it is |
