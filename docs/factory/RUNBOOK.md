@@ -97,6 +97,7 @@ The built-in `GITHUB_TOKEN` **cannot trigger downstream workflows** (an anti-loo
 - **Start work** — open an issue (as a collaborator it auto-enters), or apply `agent:explore` by hand to any existing issue.
 - **Override a stage** — apply `agent:implement` or `agent:review` by hand to run that stage directly (e.g. after a `needs-a-human` verdict you judge safe).
 - **Re-run a stage** — remove then re-add its label; re-adding an already-present label fires no event, so the remove is required.
+- **Rebase a PR now** — add the `agent:rebase` label to a PR to rebase just that PR onto its base at once (the scheduled job rebases all open PRs each morning).
 - **Merge** — review marks the PR ready; you merge. This is the final gate.
 
 ---
