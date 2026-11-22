@@ -116,7 +116,7 @@ The built-in `GITHUB_TOKEN` **cannot trigger downstream workflows** (an anti-loo
 | `Claude Code is not installed on this repository` | tried to use the Claude GitHub App action | use the raw `claude -p` CLI (the `run-agent` harness) |
 | `easy-call` verdict doesn't auto-advance | agent wrapped the verdict in backticks | parser extracts the token regardless (PR #27); prompt also emits plain text (PR #29 / #16) |
 | merged PR leaves its issue open | PR body says "Implements #N" — not a GitHub close keyword | use `Closes #N` *(open follow-up)* |
-| `pip`/`pip-audit` 401 | a private index token (e.g. CodeArtifact) | `PIP_CONFIG_FILE` points at public PyPI (`.config/pip/pip.conf`) |
+| `pip`/`pip-audit` 401 | a token-gated private index | `PIP_CONFIG_FILE` points at public PyPI (`.config/pip/pip.conf`) |
 | a stage silently didn't run | `GITHUB_TOKEN` applied the label instead of `FACTORY_PAT` | apply triggering labels via `FACTORY_PAT` |
 
 ---
