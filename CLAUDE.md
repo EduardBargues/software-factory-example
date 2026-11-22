@@ -1,4 +1,4 @@
-# software-factory-example
+# software-factory-example-python
 
 A reference **software factory**: an AI-agent pipeline that turns GitHub issues into reviewed, merged, and (eventually) deployed changes — with humans holding the gates that matter while trust is earned. See [`README.md`](README.md) for orientation.
 

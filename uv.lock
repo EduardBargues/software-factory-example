@@ -1025,7 +1025,7 @@ wheels = [
 ]
 
 [[package]]
-name = "software-factory-example"
+name = "software-factory-example-python"
 version = "0.0.0"
 source = { editable = "." }
 
