@@ -120,7 +120,31 @@ The built-in `GITHUB_TOKEN` **cannot trigger downstream workflows** (an anti-loo
 
 ---
 
-## 7. Known limitations
+## 7. Improving the factory (the retro loop)
+
+The factory improves by turning each miss into a durable guardrail. Do not just fix the one case — move the rule down to the cheapest brake so it cannot recur.
+
+**When to run it.** After a run gets something wrong that the brakes did not catch, or after you (the human reviewer) catch something the review run missed.
+
+**Run `/retro`.** It is a human-invoked skill (`.claude/skills/retro`). Point it at the run's Actions logs or the merged PR. It audits the agent's environment and proposes improvements: navigation, automated checks, coding standards, steering files, tool economy, no-ops, and information access.
+
+**Route each finding to the cheapest layer:**
+
+| Finding | Route |
+|---|---|
+| Mechanical (a fixed pattern, a banned API, an import shape) | A **check** — a lint rule, a test, or a custom script. *Prefer this.* |
+| Genuinely fuzzy (cross-file consistency, "matches the style") | A **coding standard** — a short line in `CODING_STANDARDS.md`. |
+| A specific bug | A **regression guard** — a test, committed with the fix. |
+| Process (about workflow, not the diff) | The spec or the config — not `CODING_STANDARDS.md`. |
+| A no-op or a duplicate | **Delete** it. |
+
+**Separate the fix from the guardrail.** Fix the bug in the feature PR. Build the guardrail in its own PR. The feature ships when it is correct; the guardrail protects every future PR.
+
+**Roll out a new lint rule with the ratchet.** A new check often flags old code. Do not block on a big fix. Add the rule, then fix one case per day (the lint rule ratchet) until the rule is safe everywhere.
+
+**Who owns what.** The implementer writes a first draft (it has the most context pressure). The review run enforces `CODING_STANDARDS.md` (it has a clean diff and spare context). `/retro` output, lint rules, and hooks live in `.github/` and config, so a human builds them — the agents cannot weaken their own brakes.
+
+## 8. Known limitations
 
 - **No factory-wide concurrency cap.** A single shared `concurrency` group is *not* used: GitHub keeps only one *pending* run per group and cancels earlier pending ones, which would silently **drop** queued factory work. Per-item groups dedup same-issue / same-PR runs; cross-issue fan-out is naturally low (sequential pipeline, single author). A hard cost cap needs a runner limit or external queue, not Actions concurrency.
 - **"Implements #N"** in the implement PR template is not an auto-close keyword — merged PRs leave their issue open until closed by hand. *(Open follow-up.)*
