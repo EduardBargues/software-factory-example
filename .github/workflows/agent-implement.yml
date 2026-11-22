@@ -101,9 +101,9 @@ jobs:
 
             Rules:
             - Make the SMALLEST change that correctly implements the ticket. Match the surrounding code's conventions.
-            - Follow `CODE_STANDARDS.md` (the repo's conventions the brakes can't enforce) and use the `GLOSSARY.md` terms exactly. Read both.
+            - Follow `CODING_STANDARDS.md` (the repo's coding standards the brakes can't enforce) and use the `GLOSSARY.md` terms exactly. Read both.
             - Commit your work THROUGH the pre-commit hook: stage your files and `git commit`. The hook runs the brakes (ruff, mypy, pytest, gitleaks, bandit, pip-audit). If a brake fails, fix the problem and commit again. NEVER use `--no-verify`, and never disable, skip, or edit the hooks.
-            - You MUST NOT create or modify anything under `.github/`, `.pre-commit-config.yaml`, `.config/`, or `CODE_STANDARDS.md` — you cannot weaken the factory's own brakes or standards.
+            - You MUST NOT create or modify anything under `.github/`, `.pre-commit-config.yaml`, `.config/`, or `CODING_STANDARDS.md` — you cannot weaken the factory's own brakes or standards.
             - Do NOT `git push` or open a pull request — the workflow does that. Leave your commit(s) on the current branch with a clean working tree.
             - Do not stage `.factory/` (it is a scratch dir and is git-ignored).
             - Stop when the working tree is clean and your change is committed with every brake green.
