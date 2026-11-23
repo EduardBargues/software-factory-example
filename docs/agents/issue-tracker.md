@@ -48,3 +48,15 @@ Used by `/wayfinder`. The **map** is a single issue with **child** issues as tic
 - **Frontier query**: list the map's open children (`gh issue list --state open`, scoped to the map's sub-issues / task list), drop any with an open blocker (see **Count open blockers**, or an open issue in the `Blocked by` line) or an assignee; first in map order wins.
 - **Claim**: `gh issue edit <n> --add-assignee @me`, the session's first write.
 - **Resolve**: `gh issue comment <n> --body "<answer>"`, then `gh issue close <n>`, then append a context pointer (gist + link) to the map's Decisions-so-far.
+
+### Cross-repo (multi-repo efforts)
+
+A map spanning more than one repo lives in the **originating repo** (this app repo by default); children and blockers may live in sibling repos. GitHub's native sub-issues and dependencies span repos of the same owner — drive them via `gh`/API with **issue URLs**, not the web picker (home-repo ADR-0004).
+
+- **Cross-repo child**: `gh issue create -R OWNER/<repo> --parent <map-url>` (or `gh issue edit <map> --add-sub-issue <child-url>`).
+- **Cross-repo blocking**: `gh issue edit <blocked> --add-blocked-by <blocker-url>` (e.g. this repo's ticket blocked by a terraform ticket).
+- **Frontier query (cross-repo)**: the map's sub-issues span repos; query via GraphQL, drop any with an open blocker or an assignee:
+  ```bash
+  gh api graphql -f query='query($id:ID!){node(id:$id){... on Issue{subIssues(first:100){nodes{number state repository{nameWithOwner} assignees(first:1){totalCount} blockedBy(first:50){nodes{state}}}}}}}' -F id=<map-node-id>
+  ```
+  Takeable = `state` OPEN, `assignees.totalCount` 0, zero open `blockedBy`.
