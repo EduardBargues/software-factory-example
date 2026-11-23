@@ -1,5 +1,7 @@
 # software-factory-example-python
 
+*Open an issue; get back a reviewed, merge-ready pull request.*
+
 **A GitHub-native AI software factory.** Open an issue; get back a reviewed, merge-ready pull request — with no human writing the code, and humans holding only the gates that matter.
 
 This repo is a working reference implementation: a label-triggered agent pipeline (powered by Claude Code) that turns tickets into merged, deployable changes, carrying real brakes from the first commit. It is deliberately small enough to read end-to-end and adapt to your own project.
