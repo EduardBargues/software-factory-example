@@ -16,4 +16,4 @@ The **fuzzy** conventions the `agent:review` brake enforces — the ones a deter
 
 ## Standards
 
-_(none yet — the first one will come from a `/retro` finding)_
+- **The test DSL speaks the domain** *(from the #5 retro)* — the `given`/`when`/`then` helpers in [`tests/dsl.py`](tests/dsl.py) read in [`GLOSSARY.md`](GLOSSARY.md) vocabulary, conjugated by role: **given** future, **when** present, **then** past; say the same concept the same way across the three. *(The mechanical rules — `test_when_` naming, given/when/then usage, assert-only-via-`then`, mocks via pytest-mock — are enforced by `scripts/check_test_conventions.py` and ruff, not here.)*
